@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2022.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Gemini Voxel World&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; color: white; transform: translate(-50%, -50%); pointer-events: none; font-size: 24px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#ui { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.slot { width: 40px; height: 40px; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; color: white; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#stats { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="crosshair"&gt;+&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="stats"&gt;WASD: Move | SPACE: Jump&lt;br&gt;L-Click: Build | R-Click: Break&lt;br&gt;P: SAVE | L: LOAD&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="ui"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="slot" style="background: #4d8a31;"&gt;1&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="slot" style="background: #808080;"&gt;2&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="slot" style="background: #a52a2a;"&gt;3&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script type="module"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>import { PointerLockControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/PointerLockControls.js';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- CONFIGURATION ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const chunkSize = 8;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const renderDist = 2;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let selectedBlockColor = 0x4d8a31;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let time = 0;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- SCENE SETUP ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const scene = new THREE.Scene();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const renderer = new THREE.WebGLRenderer({ antialias: true });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>renderer.setSize(window.innerWidth, window.innerHeight);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.body.appendChild(renderer.domElement);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const ambientLight = new THREE.AmbientLight(0x404040, 1);<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>scene.add(ambientLight);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const sun = new THREE.DirectionalLight(0xffffff, 1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>scene.add(sun);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- BLOCKS &amp; WORLD GEN ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const blocks = [];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const boxGeo = new THREE.BoxGeometry(1, 1, 1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const renderedChunks = new Set();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function createBlock(x, y, z, color = 0x4d8a31) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const material = new THREE.MeshLambertMaterial({ color: color });</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const mesh = new THREE.Mesh(boxGeo, material);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>mesh.position.set(x, y, z);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>scene.add(mesh);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>blocks.push(mesh);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return mesh;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function getHeight(x, z) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return Math.floor(Math.sin(x * 0.2) * 2 + Math.cos(z * 0.2) * 2);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function generateChunk(cx, cz) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let x = 0; x &lt; chunkSize; x++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>for (let z = 0; z &lt; chunkSize; z++) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const wx = cx * chunkSize + x;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const wz = cz * chunkSize + z;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const h = getHeight(wx, wz);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>for (let y = -1; y &lt;= h; y++) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>createBlock(wx, y, wz, y === h ? 0x4d8a31 : 0x6b4226);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function updateTerrain() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const px = Math.floor(camera.position.x / chunkSize);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const pz = Math.floor(camera.position.z / chunkSize);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>for(let x = px-renderDist; x &lt;= px+renderDist; x++) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>for(let z = pz-renderDist; z &lt;= pz+renderDist; z++) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if(!renderedChunks.has(`${x},${z}`)) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>generateChunk(x, z);</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>renderedChunks.add(`${x},${z}`);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- CONTROLS ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const controls = new PointerLockControls(camera, document.body);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.body.addEventListener('click', () =&gt; controls.lock());</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>let moveF = false, moveB = false, moveL = false, moveR = false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let velocity = new THREE.Vector3();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.addEventListener('keydown', (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyW') moveF = true;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyS') moveB = true;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyA') moveL = true;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyD') moveR = true;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'Space' &amp;&amp; camera.position.y &lt;= 1.7) velocity.y = 0.15;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'Digit1') selectedBlockColor = 0x4d8a31;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'Digit2') selectedBlockColor = 0x808080;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'Digit3') selectedBlockColor = 0xa52a2a;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyP') saveWorld();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyL') loadWorld();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>});</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.addEventListener('keyup', (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyW') moveF = false;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyS') moveB = false;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyA') moveL = false;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(e.code === 'KeyD') moveR = false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Building/Breaking</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const raycaster = new THREE.Raycaster();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.addEventListener('mousedown', (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(!controls.isLocked) return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>raycaster.setFromCamera(new THREE.Vector2(0,0), camera);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const intersects = raycaster.intersectObjects(blocks);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(intersects.length &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const intersect = intersects[0];</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if(e.button === 0) { // Build</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const p = intersect.object.position.clone().add(intersect.face.normal);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>createBlock(p.x, p.y, p.z, selectedBlockColor);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>} else if(e.button === 2) { // Break</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>scene.remove(intersect.object);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>blocks.splice(blocks.indexOf(intersect.object), 1);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- SAVE SYSTEM ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function saveWorld() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const data = blocks.map(b =&gt; ({x: b.position.x, y: b.position.y, z: b.position.z, c: b.material.color.getHex()}));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem('vox_save', JSON.stringify(data));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>alert("World Saved!");</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function loadWorld() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const data = JSON.parse(localStorage.getItem('vox_save'));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(!data) return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>blocks.forEach(b =&gt; scene.remove(b));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>blocks.length = 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>data.forEach(d =&gt; createBlock(d.x, d.y, d.z, d.c));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- GAME LOOP ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>camera.position.set(0, 5, 0);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function animate() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>requestAnimationFrame(animate);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(controls.isLocked) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>// Time &amp; Sky</p>
+<p class="p1"><span class="Apple-converted-space">                </span>time += 0.005;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>sun.position.set(Math.cos(time)*20, Math.sin(time)*20, 10);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>scene.background = new THREE.Color().setHSL(0.6, 0.5, Math.max(0.05, Math.sin(time) * 0.5 + 0.5));</p>
+<p class="p2"><span class="Apple-converted-space">                </span></p>
+<p class="p1"><span class="Apple-converted-space">                </span>// Movement</p>
+<p class="p1"><span class="Apple-converted-space">                </span>velocity.y -= 0.008; // Gravity</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const dir = new THREE.Vector3(Number(moveR)-Number(moveL), 0, Number(moveF)-Number(moveB)).normalize();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>controls.moveRight(dir.x * 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>controls.moveForward(dir.z * 0.1);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>camera.position.y += velocity.y;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>if(camera.position.y &lt; 1.6) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>camera.position.y = 1.6;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>velocity.y = 0;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>updateTerrain();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>renderer.render(scene, camera);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>animate();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
